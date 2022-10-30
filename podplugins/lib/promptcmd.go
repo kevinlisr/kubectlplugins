@@ -38,7 +38,8 @@ func executorCmd(cmd *cobra.Command) func(in string) {
 				log.Fatalln(err)
 			}
 		case "get":
-			getPodDetail(args)
+			//getPodDetail(args)
+			runtea(args,cmd)
 	  }
 
 	}
