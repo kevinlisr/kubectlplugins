@@ -16,6 +16,7 @@ var fact informers.SharedInformerFactory
 func InitCache() {
 	fact = informers.NewSharedInformerFactory(client,0)
 	fact.Core().V1().Pods().Informer().AddEventHandler(&PodHandler{})
+	fact.Core().V1().Events().Informer().AddEventHandler(&PodHandler{})  //wei le tou lan
 	ch := make(chan struct{})
 	fact.Start(ch)
 	fact.WaitForCacheSync(ch)

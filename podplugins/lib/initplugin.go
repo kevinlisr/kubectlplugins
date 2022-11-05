@@ -69,11 +69,12 @@ var Labels string
 var fields string
 var PodName string
 var Cache bool
-
+var Namespace string
 // chu shi hua ke hu duan
 var client = NewK8sConfig().InitClient()
+var restConfig = NewK8sConfig().K8sRestConfig()
 
-func MergeFlags(cmd ,listCmd, prompt *cobra.Command) {
+func MergeFlags(cmd ,listCmd, prompt,cacheCmd *cobra.Command) {
 	cmd.Flags().StringP("namespace", "n", "", "kubectl pods --namespace=\"kube-system\"")
 	//cmd.Flags().Bool("show-labels",false,"kubectl pods --show-labels")
 	cmd.Flags().BoolVar(&ShowLables,"show-labels",false,"kubectl pods --show-labels")
@@ -95,6 +96,7 @@ func MergeFlags(cmd ,listCmd, prompt *cobra.Command) {
 		"kubectl pods --name=\"^ng\"")
 	prompt.Flags().StringP("namespace", "n", "", "kubectl pods --namespace=\"kube-system\"")
 	//cache.Flags().StringP("namespace", "n", "", "kubectl pods --namespace=\"kube-system\"")
+	cacheCmd.Flags().StringP("namespace", "n", "", "kubectl pods --namespace=\"kube-system\"")
 
 }
 
@@ -106,14 +108,14 @@ func RunCmd() {
 		SilenceUsage: true,
 		//RunE:         run,
 	}
-	MergeFlags(cmd,listCmd,promptCmd)
+	MergeFlags(cmd,listCmd,promptCmd,cacheCmd)
 
 	//添加参数
 	//BoolVar用来支持 是否
 	//cmd.Flags().BoolVar(&ShowLabels, "show-labels", false, "kubectl pods --show-labels")
 	//cmd.Flags().StringVar(&Labels, "labels", "", "kubectl pods --labels=\"app=nginx\"")
 
-	cmd.AddCommand(listCmd,promptCmd)
+	cmd.AddCommand(listCmd,promptCmd,cacheCmd)
 
 
 	err := cmd.Execute()
@@ -123,6 +125,17 @@ func RunCmd() {
 	}
 }
 
+func getNameSpace(c *cobra.Command) string {
+	ns, err = c.Flags().GetString("namespace")
+	if ns == ""{
+		ns = "plugins"
+	}
+	if err != nil {
+		log.Println(err)
+
+	}
+	return ns
+}
 
 func run(c *cobra.Command,args []string) error {
 	//client := NewK8sConfig().InitClient()

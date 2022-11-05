@@ -24,9 +24,16 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalln(err)
 		}
+		if len(args) > 0{
+			if ns == ""{
+				ns = args[1]
+			}
+		}
 		if ns == ""{
 			ns = "default"
 		}
+
+
 		list, err := client.CoreV1().Pods(ns).List(context.Background(), v1.ListOptions{
 			LabelSelector: Labels,
 			FieldSelector: fields,

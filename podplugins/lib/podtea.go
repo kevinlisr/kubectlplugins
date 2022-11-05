@@ -18,6 +18,7 @@ type podmodel struct {
 	index int
 	cmd *cobra.Command
 	podName string
+	ns string
 }
 
 func (m podmodel)Init() tea.Cmd {
@@ -38,7 +39,7 @@ func (m podmodel)Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.index++
 			}
 		case "enter":
-			getPodDetailByJSON(m.podName, m.items[m.index].path,m.cmd)
+			getPodDetailByJSON(m.podName, m.items[m.index].path,m.ns,m.cmd)
 			return m, tea.Quit
 		}
 
@@ -59,7 +60,12 @@ func (m podmodel)View() string {
 	return s
 }
 
-func runtea(args []string, cmd *cobra.Command) {
+const (
+	PodEventType = "__event__"
+	PodLogType = "__log__"
+)
+
+func runtea(args []string, cmd *cobra.Command,ns string) {
 	if len(args) == 0{
 		log.Println("pod name is required!")
 		return
@@ -68,10 +74,17 @@ func runtea(args []string, cmd *cobra.Command) {
 		items: []*podjson{},
 		cmd: cmd,
 		podName: args[0],
+		ns: ns,
 	}
+	//v1.Pod{}
 	podModel.items = append(podModel.items,
 		&podjson{title: "Meta Info",path: "metadata"},
+		&podjson{title: "Labels",path: "metadata.labels"},
+		&podjson{title: "Annotations",path: "metadata.annotations"},
+		&podjson{title: "Containers",path: "spec.containers"},
 		&podjson{title: "All Info", path: "@this"},
+		&podjson{title: "*Events*", path: PodEventType},
+		&podjson{title: "*Logs*", path: PodLogType},
 		)
 	teaCmd := tea.NewProgram(podModel)
 	if err := teaCmd.Start();err != nil{
@@ -80,15 +93,3 @@ func runtea(args []string, cmd *cobra.Command) {
 	}
 }
 
-//func main() {
-//	var initModel = podmodel{
-//		items: []*podjson{"I can see Pods","list Deployments","I can see configmaps"},
-//	}
-//	cmd:=tea.NewProgram(initModel)
-//	if err := cmd.Start();err != nil{
-//		fmt.Println("start failed:", err)
-//		os.Exit(1)
-//	}
-//
-//
-//}

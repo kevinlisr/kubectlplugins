@@ -14,8 +14,32 @@ import (
 	"strings"
 )
 
+//var ns string
 
-func executorCmd(cmd *cobra.Command) func(in string) {
+func setNamespace(c *cobra.Command,a []string) string {
+	ns, err := c.Flags().GetString("namespace")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if ns == ""{
+
+		fmt.Printf("ns is null set ns == %s", a[1])
+		ns = a[1]
+	}
+	return ns
+}
+
+func clearConsole()  {
+	MyConsoleWriter.EraseScreen()
+	MyConsoleWriter.CursorGoTo(0,0)
+	MyConsoleWriter.Flush()
+}
+
+
+
+func executorCmd(cmd *cobra.Command,ns *string) func(in string) {
+
 	return func(in string) {
 		in = strings.TrimSpace(in)
 		blocks := strings.Split(in, " ")
@@ -34,12 +58,28 @@ func executorCmd(cmd *cobra.Command) func(in string) {
 			//if err := listCmd.RunE(cmd, []string{});err !=nil{
 			//	log.Fatalln(err)
 			//}
-			if err := cacheCmd.RunE(cmd, args);err !=nil{
+			fmt.Println("+++++++++++++++",blocks)
+			fmt.Println("+++++++++++++++",args)
+			if err := cacheCmd.RunE(cmd,args);err !=nil{
 				log.Fatalln(err)
 			}
 		case "get":
 			//getPodDetail(args)
-			runtea(args,cmd)
+			runtea(args,cmd,*ns)
+		case "set":
+				fmt.Printf("ns is null set ns == %s", args[1])
+				*ns = args[1]
+		case "clear":
+			clearConsole()
+
+		//case "del":
+		//	delPod(args,cmd)
+		//case "ns":
+		//	showNameSpace(cmd)
+		case "exec":
+			runteaExec(args,cmd)
+
+
 	  }
 
 	}
@@ -48,17 +88,30 @@ var suggestions = []prompt.Suggest{
 	{"get","GET "},
 	{"list","LIST"},
 	{"exit","EXIT the interactive window"},
+	{"exec","exec the container"},
 }
+
+//var suggestions = []prompt.Suggest{
+//	// Command
+//	{"exec", "pod shell cao zuo "},
+//	{"get","get pod xiang xi xin xi"},
+//	{"use", "she zhi dang qian ming ming kong jian"},
+//	{"del", "shan chu mou ge pod"},
+//	{"list","xian shi pod lie biao"},
+//	{"clear", "qing chu ping mu"},
+//	{"exit","tui chu jiao hu shi"},
+//}
 
 var podSuggestions = []prompt.Suggest{
 	{"get","get pods details"},
 	{"list","show pods list"},
 	{"exit","exit the interactive window"},
+	{"exec","exec the container"},
 }
 
-func getPodsList()(ret []prompt.Suggest){
+func getPodsList(ns *string)(ret []prompt.Suggest){
 	pods , err :=fact.Core().V1().Pods().Lister().
-		Pods("default").List(labels.Everything())
+		Pods(*ns).List(labels.Everything())
 	if err != nil{return }
 	for _, pod := range pods{
 		ret=append(ret,prompt.Suggest{
@@ -79,32 +132,76 @@ func parseCmd(w string) (string, string) {
 	return w,""
 }
 
-func completer(in prompt.Document) []prompt.Suggest {
-	w := in.GetWordBeforeCursor()
-	if w == ""{
-		return []prompt.Suggest{}
-	}
+//func completer(in prompt.Document) []prompt.Suggest {
+//	w := in.GetWordBeforeCursor()
+//	if w == ""{
+//		return []prompt.Suggest{}
+//	}
+//
+//	cmd, opt := parseCmd(in.TextBeforeCursor())
+//	//fmt.Println(cmd)
+//	if cmd == "get"{
+//		return prompt.FilterHasPrefix(getPodsList(ns),opt,true)
+//	}
+//
+//	return prompt.FilterHasPrefix(suggestions,w,true)
+//}
 
-	cmd, opt := parseCmd(in.TextBeforeCursor())
-	//fmt.Println(cmd)
-	if cmd == "get"{
-		return prompt.FilterHasPrefix(getPodsList(),opt,true)
+func completerCmd(ns *string) func (in prompt.Document) []prompt.Suggest {
+	return func (in prompt.Document) []prompt.Suggest {
+		w := in.GetWordBeforeCursor()
+		if w == ""{
+			return []prompt.Suggest{}
+		}
+
+		cmd, opt := parseCmd(in.TextBeforeCursor())
+		//fmt.Println(cmd)
+
+		//if inArray([]string{"get","del","exec"},cmd){
+		//	return prompt.FilterHasPrefix(getPodsList(ns),opt,true)
+		//}
+
+		if cmd == "get"{
+			return prompt.FilterHasPrefix(getPodsList(ns),opt,true)
+		}
+		if cmd == "exec"{
+			return prompt.FilterHasPrefix(getPodsList(ns),opt,true)
+		}
+
+		return prompt.FilterHasPrefix(suggestions,w,true)
 	}
-	return prompt.FilterHasPrefix(suggestions,w,true)
 }
-
-
+var ns string
+var err error
+var MyConsoleWriter = prompt.NewStderrWriter()
 var promptCmd = &cobra.Command{
 	Use: "prompt",
 	Short: "prompt pods",
 	Example: "kubectl pods prompt [flags]",
 	SilenceUsage: true,
 	RunE: func(c *cobra.Command, args []string) error {
+
+		ns, err = c.Flags().GetString("namespace")
+		fmt.Println("promptCmd  get namespace is:", ns)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		if len(args) > 1{
+			ns = args[1]
+		}
+
+		if ns == ""{
+			ns = "default"
+		}
+
 		InitCache()
 		p := prompt.New(
-			executorCmd(c),
-			completer,
+			executorCmd(c,&ns),
+			completerCmd(&ns),
 			prompt.OptionPrefix(">>>"),
+			// she zhi  "clear" ming ling lai qing ping
+			prompt.OptionWriter(MyConsoleWriter),
 
 		)
 		p.Run()

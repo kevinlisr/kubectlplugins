@@ -17,11 +17,23 @@ var cacheCmd = &cobra.Command{
 	Short: "pods by cache",
 	Hidden: true,
 	RunE: func(c *cobra.Command, args []string) error {
-		ns, err := c.Flags().GetString("namespace")
-		if err != nil {
-			log.Fatalln(err)
+		//ns, err = c.Flags().GetString("namespace")
+		//fmt.Println("cacheCmd  get namespace is:", ns)
+		//if err != nil {
+		//	log.Fatalln(err)
+		//}
+
+
+		//arg := fmt.Sprintf("%s", args[1])
+		//if ns == ""{ns=args[1]}
+		if len(args) != 0{
+			fmt.Println("args[1] fu zhi")
+			ns=args[1]
+			fmt.Printf("++++++++++++++++%s\n", args[1])
+		}else {
+			if ns == ""{ns="default"}
+			//ns="default"
 		}
-		if ns == ""{ns="default"}
 
 		pods, err := fact.Core().V1().Pods().Lister().Pods(ns).
 			List(labels.Everything())
